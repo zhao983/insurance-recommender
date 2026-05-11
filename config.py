@@ -26,17 +26,41 @@ EMBEDDING_CACHE_PATH = os.path.join(CHECKPOINT_DIR, "product_embeddings.npy")
 EMBEDDING_MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 TEXT_GEN_MODEL_NAME = "uer/gpt2-chinese-cluecorpussmall"
 
-MYSQL_CONFIG = {
-    "host": "gateway01.ap-northeast-1.prod.aws.tidbcloud.com",
-    "port": 4000,
-    "user": "4BaT2Z4EUDpj4XB.root",
-    "password": "J6mc6uLe3oDD4LbW",
-    "database": "insurance_recommender",
-    "charset": "utf8mb4",
-    "ssl": {
-        "ca": os.path.join(BASE_DIR, "data", "tidb_ca.pem"),
-    },
-}
+def _get_mysql_config():
+    try:
+        import streamlit as st
+        return {
+            "host": st.secrets["tidb_host"],
+            "port": st.secrets.get("tidb_port", 4000),
+            "user": st.secrets["tidb_user"],
+            "password": st.secrets["tidb_password"],
+            "database": st.secrets.get("tidb_database", "insurance_recommender"),
+            "charset": "utf8mb4",
+            "ssl": {
+                "ca": os.path.join(BASE_DIR, "data", "tidb_ca.pem"),
+            },
+        }
+    except Exception:
+        pass
+
+    env = os.environ
+    host = env.get("TIDB_HOST", "gateway01.ap-northeast-1.prod.aws.tidbcloud.com")
+    user = env.get("TIDB_USER", "4BaT2Z4EUDpj4XB.root")
+    pw = env.get("TIDB_PASSWORD", "")
+
+    return {
+        "host": host,
+        "port": int(env.get("TIDB_PORT", "4000")),
+        "user": user,
+        "password": pw,
+        "database": env.get("TIDB_DATABASE", "insurance_recommender"),
+        "charset": "utf8mb4",
+        "ssl": {
+            "ca": os.path.join(BASE_DIR, "data", "tidb_ca.pem"),
+        },
+    }
+
+MYSQL_CONFIG = _get_mysql_config()
 
 if _TORCH_AVAILABLE:
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

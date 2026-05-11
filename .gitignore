@@ -6,3 +6,4 @@ data/uci_coil_2000/
 .env
 *.log
 .streamlit/secrets.toml
+config.local.py
