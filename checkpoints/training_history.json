@@ -1,0 +1,25 @@
+[
+  {
+    "model_name": "DeepFM",
+    "params": {
+      "embedding_dim": 16,
+      "dnn_hidden_units": [
+        256,
+        128,
+        64
+      ],
+      "dnn_dropout": 0.2,
+      "l2_reg": 1e-05,
+      "learning_rate": 0.001,
+      "batch_size": 512,
+      "epochs": 10,
+      "early_stopping_patience": 5,
+      "text_embedding_dim": 384
+    },
+    "train_time": "2026-05-09 15:38:24",
+    "final_train_loss": 0.2117958962917328,
+    "final_val_loss": 0.2124672517180443,
+    "final_val_auc": 0.8602661653420769,
+    "epochs_trained": 10
+  }
+]
