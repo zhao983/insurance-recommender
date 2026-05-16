@@ -207,6 +207,84 @@ class InsuranceRecommender:
             if k in self.model_params:
                 self.model_params[k] = v
 
+    def _map_form_to_coil(self, form_profile, cat_feats, num_feats):
+        import hashlib
+
+        age = form_profile.get("age", 30)
+        income = form_profile.get("annual_income", 80000)
+        has_car_val = 1 if form_profile.get("has_car") == "有" else 0
+        has_house_val = 1 if form_profile.get("has_house") == "有" else 0
+
+        health = form_profile.get("health_status", "健康")
+        health_score = {"健康": 1.0, "亚健康": 0.7, "有慢性病": 0.4, "有重大病史": 0.1}.get(health, 0.5)
+
+        family = form_profile.get("family_structure", "单身")
+        family_size = {"单身": 1, "单亲家庭": 2, "已婚无子女": 2, "已婚有子女": 4, "三代同堂": 5}.get(family, 2)
+        household_size = form_profile.get("family_members", family_size)
+
+        gender = form_profile.get("gender", "男")
+        city = form_profile.get("city_tier", "二线城市")
+        city_mult = {"一线城市": 1.5, "二线城市": 1.0, "三线城市": 0.7, "四线及以下": 0.5}.get(city, 1.0)
+        occupation = form_profile.get("occupation", "白领")
+
+        user_seed = int(hashlib.md5(
+            f"{age}{income}{gender}{city}{occupation}{health}{family}{household_size}{has_car_val}{has_house_val}".encode()
+        ).hexdigest(), 16) % 10000
+
+        np.random.seed(user_seed)
+
+        age_bucket = 0 if age < 30 else (1 if age < 40 else (2 if age < 50 else (3 if age < 60 else (4 if age < 70 else 5))))
+
+        religion_idxs = list(range(5))
+        np.random.shuffle(religion_idxs)
+        religion_idx = religion_idxs[0]
+
+        marital_idxs = list(range(4))
+        np.random.shuffle(marital_idxs)
+        if family in ("单身", "单亲家庭"):
+            marital_idx = marital_idxs.index(3) if 3 in marital_idxs else 3
+        elif family in ("已婚有子女", "已婚无子女"):
+            marital_idx = marital_idxs.index(0) if 0 in marital_idxs else 0
+        else:
+            marital_idx = marital_idxs[0]
+
+        social_category_idx = int(np.clip(int(income / 50000) + (has_car_val * 2) + (has_house_val * 2), 0, 11))
+
+        result = {}
+        for col in cat_feats:
+            if col == "social_category_idx":
+                result[col] = social_category_idx
+            elif col == "age_group_idx":
+                result[col] = age_bucket
+            elif col == "religion_idx":
+                result[col] = religion_idx
+            elif col == "marital_status_idx":
+                result[col] = marital_idx
+            else:
+                result[col] = int(np.random.randint(0, 5))
+
+        income_level = income / (100000 * city_mult) * health_score
+        car_own = has_car_val + np.random.normal(0, 0.1)
+        hh_size = household_size + np.random.normal(0, 0.1)
+        caravan = 0
+
+        for col in num_feats:
+            if col == "avg_income_level":
+                result[col] = float(np.clip(income_level, 0, 200))
+            elif col == "car_ownership":
+                result[col] = float(np.clip(car_own, 0, 5))
+            elif col == "household_size":
+                result[col] = float(np.clip(hh_size, 1, 10))
+            elif col == "has_caravan":
+                result[col] = caravan
+            elif col.startswith("coil_socio_"):
+                result[col] = float(np.clip(np.random.normal(0.5, 0.2), 0, 1))
+            else:
+                result[col] = float(np.random.normal(0, 1))
+
+        np.random.seed()
+        return result
+
     def recommend_for_user(self, user_profile):
         if not self._initialized:
             raise RuntimeError("Recommender not initialized. Call initialize() first.")
@@ -217,9 +295,7 @@ class InsuranceRecommender:
             user_num_feats = [c for c in REAL_USER_NUMERICAL_FEATURES if c in self.users_df.columns]
             prod_cat_feats = [c for c in REAL_PRODUCT_CATEGORICAL_FEATURES if c in self.preprocessor.prod_cat_encoders]
             prod_num_feats = [c for c in REAL_PRODUCT_NUMERICAL_FEATURES if c in self.products_df.columns]
-            user_row = {}
-            for col in user_cat_feats + user_num_feats:
-                user_row[col] = user_profile.get(col, 0)
+            user_row = self._map_form_to_coil(user_profile, user_cat_feats, user_num_feats)
         else:
             user_cat_feats = USER_CATEGORICAL_FEATURES
             user_num_feats = USER_NUMERICAL_FEATURES
