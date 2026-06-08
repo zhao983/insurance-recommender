@@ -1,5 +1,3 @@
-根据这个项目的名称 insurance-recommender 以及 GitHub 仓库的通用结构，我为你草拟了一份专业且结构清晰的 README.md。
-
 你可以根据仓库中的实际文件内容（例如具体的算法、数据集来源等）对其中的细节进行微调。
 
 Insurance Recommender System (保险推荐系统)
@@ -24,8 +22,8 @@ insurance-recommender
 
   - 编程语言：Python
   - 数据处理：Pandas, NumPy
-  - 机器学习：Scikit-learn, (如有 LightGBM/XGBoost 请补充)
-  - Web 框架：Flask / FastAPI (如果包含 API 服务)
+  - 机器学习：Scikit-learn
+  - Web 框架：Flask / FastAPI
   - 环境管理：Conda / Pip
 
 📁 项目结构
@@ -54,7 +52,7 @@ cd insurance-recommender
 
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
-# 或
+或
 venv\Scripts\activate     # Windows
 
 pip install -r requirements.txt
