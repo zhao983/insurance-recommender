@@ -45,6 +45,7 @@ insurance-recommender
 1. 克隆仓库
 
 git clone https://github.com/zhao983/insurance-recommender.git
+
 cd insurance-recommender
 
 2. 安装依赖
